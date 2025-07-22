@@ -1,98 +1,53 @@
 import streamlit as st
-import yfinance as yf
-import pandas_ta as ta
 import pandas as pd
-import json
-import os
+from nsepython import *
 
-st.set_page_config(page_title="📈 Smart Stock Advisor", layout="wide")
-st.title("📉 Smart Stock Advisor")
-st.markdown("Analyze stocks with fundamentals, technicals, and get smart BUY/HOLD/SELL suggestions")
+st.set_page_config(page_title="Stock Analyser", layout="wide")
+st.title("📈 Indian Stock Analyser - NSE")
 
-# --- Sidebar Inputs ---
-st.sidebar.header("Stock Input")
-tickers_input = st.sidebar.text_input("Enter stock tickers (comma-separated)", value="TATAMOTORS, RELIANCE")
-time_period = st.sidebar.selectbox("Select time period", ["1mo", "3mo", "6mo", "1y", "2y", "5y"], index=3)
+# Input for ticker symbols (comma-separated)
+ticker_input = st.text_input("Enter NSE stock tickers (e.g. RELIANCE, INFY, TCS):", "RELIANCE")
+tickers = [ticker.strip().upper() for ticker in ticker_input.split(",") if ticker.strip()]
 
-# --- Helper Functions ---
-def normalize_ticker(ticker):
-    ticker = ticker.strip().upper()
-    if not ticker.endswith(".NS") and not ticker.endswith(".BO"):
-        return ticker + ".NS"  # Default to NSE
-    return ticker
-
-def fetch_stock_data(ticker, period):
+# Function to fetch stock data from NSE
+@st.cache_data(show_spinner=False)
+def fetch_nse_data(ticker):
     try:
-        data = yf.download(ticker, period=period)
-        if data.empty:
-            raise ValueError("No data returned. Check ticker symbol or market availability.")
-        return data
+        data = nse_eq(ticker)
+        price_info = data['priceInfo']
+        return {
+            'lastPrice': price_info.get('lastPrice', 0),
+            'dayHigh': price_info.get('intraDayHighLow', {}).get('max', 0),
+            'dayLow': price_info.get('intraDayHighLow', {}).get('min', 0),
+            'weekHigh52': price_info.get('weekHighLow', {}).get('max', 0),
+            'weekLow52': price_info.get('weekHighLow', {}).get('min', 0),
+            'change': price_info.get('change', 0),
+            'pChange': price_info.get('pChange', 0)
+        }
     except Exception as e:
-        return str(e)
+        st.warning(f"Failed to fetch data for {ticker}: {e}")
+        return None
 
-def analyze_technical(data):
-    try:
-        data.ta.sma(length=20, append=True)
-        data.ta.rsi(length=14, append=True)
-        data.ta.macd(append=True)
-        return data.tail(1)  # Return latest row with indicators
-    except Exception as e:
-        return str(e)
+st.markdown("---")
 
-def generate_signal(row):
-    try:
-        rsi = row.get("RSI_14")
-        macd = row.get("MACD_12_26_9")
-        macds = row.get("MACDs_12_26_9")
+for ticker in tickers:
+    st.subheader(f"📊 {ticker} Analysis")
+    stock_data = fetch_nse_data(ticker)
 
-        if pd.isna(rsi) or pd.isna(macd) or pd.isna(macds):
-            return "Not enough data"
+    if stock_data:
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Current Price (₹)", stock_data['lastPrice'], f"{stock_data['pChange']}%")
+        col2.metric("Day High", stock_data['dayHigh'])
+        col3.metric("Day Low", stock_data['dayLow'])
+        col4.metric("52W High / Low", f"{stock_data['weekHigh52']} / {stock_data['weekLow52']}")
 
-        if rsi < 30 and macd > macds:
-            return "BUY"
-        elif rsi > 70 and macd < macds:
-            return "SELL"
-        else:
-            return "HOLD"
-    except:
-        return "ERROR"
+        # Basic Decision Rule Example
+        suggestion = "Hold"
+        if stock_data['lastPrice'] <= 1.05 * stock_data['weekLow52']:
+            suggestion = "Consider Buying (near 52W Low)"
+        elif stock_data['lastPrice'] >= 0.95 * stock_data['weekHigh52']:
+            suggestion = "Consider Selling (near 52W High)"
 
-# --- Processing ---
-stocks = [normalize_ticker(ticker) for ticker in tickers_input.split(",") if ticker.strip()]
-
-results = []
-errors = []
-
-for ticker in stocks:
-    data = fetch_stock_data(ticker, time_period)
-    if isinstance(data, str):  # Error
-        errors.append((ticker, data))
-        continue
-
-    last_row = analyze_technical(data)
-    if isinstance(last_row, str):
-        errors.append((ticker, last_row))
-        continue
-
-    signal = generate_signal(last_row.iloc[0])
-    results.append((ticker, signal, last_row.iloc[0].to_dict()))
-
-# --- Display Results ---
-st.subheader("🔍 Smart Recommendations")
-if results:
-    for ticker, signal, indicators in results:
-        st.markdown(f"### {ticker}")
-        st.markdown(f"**Signal:** `{signal}`")
-        st.write(indicators)
-else:
-    st.info("No valid stock data available for analysis.")
-
-if errors:
-    st.subheader("⚠️ Errors")
-    error_df = pd.DataFrame(errors, columns=["Ticker", "Error"])
-    st.dataframe(error_df, use_container_width=True)
-
-# --- Placeholder for News/Alerts ---
-st.subheader("📰 News & Alerts (Coming Soon)")
-for ticker in stocks:
-    st.markdown(f"- 🔔 **{ticker}**: No news alerts at the moment.")
+        st.success(f"📌 Suggestion: **{suggestion}**")
+    else:
+        st.error(f"No data available for {ticker}")

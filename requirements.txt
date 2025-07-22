@@ -3,5 +3,4 @@ streamlit
 yfinance
 pandas
 pandas-ta
-requests
-beautifulsoup4
+matplotlib

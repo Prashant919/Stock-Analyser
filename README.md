@@ -1,53 +1,16 @@
 
-# 📈 Smart Stock Advisor (Streamlit App)
+# 📈 Stock Advisor App
 
-This is a multi-stock analysis tool for Indian (NSE/BSE) and international stocks. It evaluates:
+This Streamlit app helps analyze stocks based on fundamentals and technicals.
 
-- ✅ Fundamentals (PE, ROE, Debt-to-Equity)
-- 📊 Technical indicators (RSI, 50/200 MAs)
-- 🧠 BUY / HOLD / SELL recommendation
-- 📰 News placeholder (real-time news integration coming soon)
+## 🚀 How to Use
 
-## 🖥 Demo on Streamlit Cloud
+1. Clone or download the repo.
+2. Install requirements: `pip install -r requirements.txt`
+3. Run: `streamlit run app.py`
 
-Want to run this instantly in your browser?
+## ✅ Features
 
-👉 [Launch the app on Streamlit Cloud](https://share.streamlit.io/) *(link will be added after upload)*
-
-## 🚀 Run Locally
-
-```bash
-# Step 1: Clone this repo
-git clone https://github.com/YOUR_USERNAME/stock-advisor-streamlit.git
-cd stock-advisor-streamlit
-
-# Step 2: Create a virtual environment
-python -m venv venv
-source venv/bin/activate  # or .\venv\Scripts\activate on Windows
-
-# Step 3: Install requirements
-pip install -r requirements.txt
-
-# Step 4: Launch the app
-streamlit run app.py
-```
-
-## 🔍 Example Tickers
-- `TATAMOTORS.NS`
-- `RELIANCE.NS`
-- `INFY.NS`
-
-## 🛠 Built With
-- [Streamlit](https://streamlit.io/)
-- [yFinance](https://pypi.org/project/yfinance/)
-- [pandas-ta](https://github.com/twopirllc/pandas-ta)
-
----
-
-## 🔮 Upcoming Features
-- Real-time news
-- DCF valuation module
-- Multi-stock side-by-side comparison table
-
-## ✨ Author
-Built by [Prashant Nigam](https://github.com/)
+- Technical indicators (RSI, MA)
+- Fundamental checks (PE, ROE, etc.)
+- Multi-stock comparison
